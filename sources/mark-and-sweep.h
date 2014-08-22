@@ -54,6 +54,7 @@ typedef struct {
 void ms_sweep();  
 void ms_clear();  
 void ms_debug();
+size_t ms_unfreed();
 void ms_root(void*);
 void ms_unroot(void*);
 
@@ -61,10 +62,10 @@ void ms_unroot(void*);
 // interface for non-global allocators
 #define ms_allocation_(gc, type, internals)  ms_allocate_(gc, sizeof(type), MS_ALIGNMENT_OF(type), internals)
 #define ms_array_(gc, type, size, internals) ms_allocate_(gc, size * sizeof(type), MS_ALIGNMENT_OF(type), internals)
-void ms_sweep(MSCollector*);  
-void ms_clear(MSCollector*);  
-void ms_debug(MSCollector*);
-void ms_init(MSCollector*);
+void ms_sweep_(MSCollector*);  
+void ms_clear_(MSCollector*);  
+void ms_debug_(MSCollector*);
+void ms_init_(MSCollector*);
 
 
 

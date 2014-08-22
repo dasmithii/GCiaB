@@ -6,7 +6,7 @@
 // backtracks to find header of assumed allocation
 static void *getDataHeader(void *ptr)
 {
-	char *byte = ptr - 1;
+	char *byte = ((char*) ptr) - 1;
 	while(*byte == 0)
 		--byte;
 	return (void*) (byte - offsetof(MSHeader, internals) - sizeof(MSInternals));
@@ -42,10 +42,12 @@ static void *getReferenceHeader(MSHeader *self, size_t i)
 static void unmarkAll(MSCollector *self)
 {
 	MSHeader *i = self->firstHeader;
-	while(i){
-		i->marked = 0;
-		i = i->next;
-	}
+	printf("\n\n%p\n\n", i);
+	printf("\n\n%p\n\n", i->next);
+	// while(i){
+	// 	i->marked = 0;
+	// 	i = i->next;
+	// }
 }
 
 static void markRecursive(MSHeader*);
@@ -112,8 +114,8 @@ static void filterUnmarked(MSCollector *self)
 void ms_sweep_(MSCollector *self)
 {
 	unmarkAll(self);
-	markRootsRecursive(self);
-	filterUnmarked(self);
+	// markRootsRecursive(self);
+	// filterUnmarked(self);
 }  
 
 
@@ -130,7 +132,7 @@ static MSHeader *newAllocation(size_t size
 {
 	size_t prefixedBytes = sizeof(MSHeader) > alignment? sizeof(MSHeader):alignment;
 	size_t required = prefixedBytes + size;
-	MSHeader *ret = calloc(required, 1);
+	MSHeader *ret = calloc(1, required);
 	ret->next = NULL;
 	ret->marked = 0;
 	ret->rooted = 0;
@@ -147,6 +149,7 @@ void *ms_allocate_(MSCollector *self
 	             , MSInternals *internals)
 {
 	MSHeader *header = newAllocation(size, alignment, internals);
+
 	if(self->unfreedAllocations == 0){
 		self->firstHeader = header;
 		self->lastHeader = header;
@@ -154,6 +157,10 @@ void *ms_allocate_(MSCollector *self
 		self->lastHeader->next = header;
 		self->lastHeader = header;
 	}
+	printf("next address: %p\n", &(header->next));
+	printf("variable address: %p\n", &(self->unfreedAllocations));
+	self->unfreedAllocations++;
+
 	return getHeaderData(header);	
 }
 
@@ -198,7 +205,7 @@ static MSCollector *ms_g = NULL;
 static void prepareGC()
 {
 	if(!ms_g){
-		ms_g = malloc(sizeof(ms_g));
+		ms_g = malloc(sizeof(MSCollector));
 		MSCollector_init(ms_g);
 	}
 }
@@ -231,3 +238,9 @@ void ms_clear()
 	ms_clear_(ms_g);
 }
 
+
+size_t ms_unfreed()
+{
+	prepareGC();
+	return ms_g->unfreedAllocations;
+}
