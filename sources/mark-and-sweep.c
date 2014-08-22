@@ -42,12 +42,10 @@ static void *getReferenceHeader(MSHeader *self, size_t i)
 static void unmarkAll(MSCollector *self)
 {
 	MSHeader *i = self->firstHeader;
-	printf("\n\n%p\n\n", i);
-	printf("\n\n%p\n\n", i->next);
-	// while(i){
-	// 	i->marked = 0;
-	// 	i = i->next;
-	// }
+	while(i){
+		i->marked = 0;
+		i = i->next;
+	}
 }
 
 static void markRecursive(MSHeader*);
@@ -83,16 +81,15 @@ static void markRootsRecursive(MSCollector *self)
 static void filterUnmarked(MSCollector *self)
 {
 	MSHeader *i = self->firstHeader;
-	while(i){
-		if(i->next){
-			if(i->next->marked == 0){
-				MSHeader *temp = i->next->next;
-				free(i->next);
-				i->next = temp;
-				self->unfreedAllocations -= 1;
-			}
+	while(i && i->next){
+		if(i->next->marked == 0){
+			MSHeader *temp = i->next->next;
+			free(i->next);
+			i->next = temp;
+			self->unfreedAllocations -= 1;
+		} else {
+			i = i->next;
 		}
-		i = i->next;
 	}
 
 
@@ -114,8 +111,8 @@ static void filterUnmarked(MSCollector *self)
 void ms_sweep_(MSCollector *self)
 {
 	unmarkAll(self);
-	// markRootsRecursive(self);
-	// filterUnmarked(self);
+	markRootsRecursive(self);
+	filterUnmarked(self);
 }  
 
 
@@ -157,8 +154,7 @@ void *ms_allocate_(MSCollector *self
 		self->lastHeader->next = header;
 		self->lastHeader = header;
 	}
-	printf("next address: %p\n", &(header->next));
-	printf("variable address: %p\n", &(self->unfreedAllocations));
+
 	self->unfreedAllocations++;
 
 	return getHeaderData(header);	

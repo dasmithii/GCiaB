@@ -44,7 +44,7 @@ typedef struct {
 #define MS_ALIGNMENT_OF(type)  \
 	offsetof( struct {         \
 			  	char x;        \
-			  	type member    \
+			  	type member;   \
 		      }, member)
 
 
