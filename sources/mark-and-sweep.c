@@ -9,7 +9,7 @@ static void *getDataHeader(void *ptr)
 	char *byte = ((char*) ptr) - 1;
 	while(*byte == 0)
 		--byte;
-	return (void*) (byte - offsetof(MSHeader, internals) - sizeof(MSInternals));
+	return (void*) (byte - offsetof(MSHeader, foreach) - sizeof(void (*)(void*, void(*)(void*))));
 	// TODO: fix the above line, which depends on an undefined bahavior (!)
 }
 
@@ -24,21 +24,6 @@ static void *getHeaderData(MSHeader *self)
 }
 
 
-static void *getReferenceData(MSHeader *self, size_t i)
-{
-	char *ptr = getHeaderData(self);
-	ptr += self->internals->offsets[i];
-	return *((void**) ptr);
-}
-
-
-static void *getReferenceHeader(MSHeader *self, size_t i)
-{
-	void *data = getReferenceData(self, i);
-	return getDataHeader(data);
-}
-
-
 static void unmarkAll(MSCollector *self)
 {
 	MSHeader *i = self->firstHeader;
@@ -48,22 +33,20 @@ static void unmarkAll(MSCollector *self)
 	}
 }
 
-static void markRecursive(MSHeader*);
-static void markReferenceHeaders(MSHeader *self)
-{
-	if(self->internals){
-		for(int i = 0; i < self->internals->count; ++i)
-			markRecursive(getReferenceHeader(self, i));
-	}
-}
 
-
+static void markDataRecursive(void *data);
 static void markRecursive(MSHeader *root)
 {
 	if(root->marked == 0){
 		root->marked = 1;
-		markReferenceHeaders(root);
+		root->foreach(getHeaderData(root), markDataRecursive);
 	}
+}
+
+static void markDataRecursive(void *data)
+{
+	MSHeader *header = getDataHeader(data);
+	markRecursive(header);
 }
 
 
@@ -125,7 +108,7 @@ void ms_debug_(MSCollector *self)
 
 static MSHeader *newAllocation(size_t size
 	                         , size_t alignment
-	                         , MSInternals *internals)
+	                         , void (*foreach)(void*, void(*)(void*)))
 {
 	size_t prefixedBytes = sizeof(MSHeader) > alignment? sizeof(MSHeader):alignment;
 	size_t required = prefixedBytes + size;
@@ -134,7 +117,7 @@ static MSHeader *newAllocation(size_t size
 	ret->marked = 0;
 	ret->rooted = 0;
 	ret->padding = prefixedBytes - sizeof(MSHeader);
-	ret->internals = internals;
+	ret->foreach = foreach;
 	ret->barrier = 1;
 	return ret;
 }
@@ -143,9 +126,9 @@ static MSHeader *newAllocation(size_t size
 void *ms_allocate_(MSCollector *self
 	             , size_t size
 	             , size_t alignment
-	             , MSInternals *internals)
+	             , void (*foreach)(void*, void(*)(void*)))
 {
-	MSHeader *header = newAllocation(size, alignment, internals);
+	MSHeader *header = newAllocation(size, alignment, foreach);
 
 	if(self->unfreedAllocations == 0){
 		self->firstHeader = header;
@@ -221,10 +204,10 @@ void ms_debug()
 }
 
 
-void *ms_allocate(size_t size, size_t alignment, MSInternals *internals)
+void *ms_allocate(size_t size, size_t alignment, void (*foreach)(void*, void(*)(void*)))
 {
 	prepareGC();
-	return ms_allocate_(ms_g, size, alignment, internals);
+	return ms_allocate_(ms_g, size, alignment, foreach);
 }
 
 

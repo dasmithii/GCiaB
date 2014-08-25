@@ -14,17 +14,10 @@
 // build in GC directly, this code could be optimized greatly. TODO (!)
 
 
-// describes internal references of allocation
-typedef struct {
-	size_t count;
-	size_t *offsets;
-} MSInternals;
-
-
 // data prepended before every allocation
 typedef struct MSHeader {
 	struct MSHeader *next;
-	MSInternals *internals;
+	void (*foreach)(void*, void(*)(void*));
 	unsigned int marked : 1;
 	unsigned int rooted : 1;
 	unsigned int padding : CHAR_BIT - 3;
@@ -49,8 +42,8 @@ typedef struct {
 
 
 // main interface
-#define ms_allocation(type, internals)  ms_allocate(sizeof(type), MS_ALIGNMENT_OF(type), internals)
-#define ms_array(type, size, internals) ms_allocate(size * sizeof(type), MS_ALIGNMENT_OF(type), internals)
+#define ms_allocation(type, foreach)  ms_allocate(sizeof(type), MS_ALIGNMENT_OF(type), foreach)
+#define ms_array(type, size, foreach) ms_allocate(size * sizeof(type), MS_ALIGNMENT_OF(type), foreach)
 void ms_sweep();  
 void ms_clear();  
 void ms_debug();
@@ -60,8 +53,8 @@ void ms_unroot(void*);
 
 
 // interface for non-global allocators
-#define ms_allocation_(gc, type, internals)  ms_allocate_(gc, sizeof(type), MS_ALIGNMENT_OF(type), internals)
-#define ms_array_(gc, type, size, internals) ms_allocate_(gc, size * sizeof(type), MS_ALIGNMENT_OF(type), internals)
+#define ms_allocation_(gc, type, foreach)  ms_allocate_(gc, sizeof(type), MS_ALIGNMENT_OF(type), foreach)
+#define ms_array_(gc, type, size, foreach) ms_allocate_(gc, size * sizeof(type), MS_ALIGNMENT_OF(type), foreach)
 void ms_sweep_(MSCollector*);  
 void ms_clear_(MSCollector*);  
 void ms_debug_(MSCollector*);
@@ -70,8 +63,8 @@ void ms_init_(MSCollector*);
 
 
 // allocate with given size and alignment
-void *ms_allocate(size_t, size_t, MSInternals*);
-void *ms_allocate_(MSCollector*, size_t, size_t, MSInternals*);
+void *ms_allocate(size_t, size_t, void (*)(void*, void(*)(void*)));
+void *ms_allocate_(MSCollector*, size_t, size_t, void (*)(void*, void(*)(void*)));
 
 
 

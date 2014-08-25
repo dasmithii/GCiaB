@@ -19,7 +19,6 @@ TEST ms_rootless()
 // TEST ms_roots()
 // {
 // 	int *a1 = ms_allocation(int, NULL);
-// 	int *a2 = ms_allocation(int, NULL);
 // 	ms_sweep();
 // 	ASSERT_EQ(ms_unfreed(), 2);
 // 	ms_root(a1);
