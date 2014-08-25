@@ -4,7 +4,7 @@
 
 
 // backtracks to find header of assumed allocation
-static void *getDataHeader(void *ptr)
+static void *getDataHeader(const void *ptr)
 {
 	char *byte = ((char*) ptr) - 1;
 	while(*byte == 0)
@@ -34,7 +34,7 @@ static void unmarkAll(MSCollector *self)
 }
 
 
-static void markDataRecursive(void *data);
+static void markDataRecursive(const void *data);
 static void markRecursive(MSHeader *root)
 {
 	if(root->marked == 0){
@@ -43,7 +43,7 @@ static void markRecursive(MSHeader *root)
 	}
 }
 
-static void markDataRecursive(void *data)
+static void markDataRecursive(const void *data)
 {
 	MSHeader *header = getDataHeader(data);
 	markRecursive(header);
@@ -108,7 +108,7 @@ void ms_debug_(MSCollector *self)
 
 static MSHeader *newAllocation(size_t size
 	                         , size_t alignment
-	                         , void (*foreach)(void*, void(*)(void*)))
+	                         , void (*foreach)(void*, void(*)(const void*)))
 {
 	size_t prefixedBytes = sizeof(MSHeader) > alignment? sizeof(MSHeader):alignment;
 	size_t required = prefixedBytes + size;
