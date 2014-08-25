@@ -1,11 +1,11 @@
 #include <kit/greatest.h>
-extern SUITE(ms_suite);
+extern SUITE(gc_suite);
 
 
 GREATEST_MAIN_DEFS();
 int main(int argc, char *argv[]) {
 	GREATEST_MAIN_BEGIN();   
-	RUN_SUITE(ms_suite);
+	RUN_SUITE(gc_suite);
 	GREATEST_MAIN_END();
 	return 0;
 }

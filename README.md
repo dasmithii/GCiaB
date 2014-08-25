@@ -10,8 +10,38 @@ However, if X-language has high ambitions, this library should be replaced later
 
 
 
-# Sample Usage
-Coming soon...
+# Tutorial
+The GCiaB interface consists of three primary functions: allocation, root specification, and sweeping. 
+
+Basic datatypes are allocated using `gc_primitive(<type>)`:
+```C
+int *my_integer = gc_primitive(int);
+```
+
+Compound objects are created via `gc_object(<type>, <foreach>)`. Argument two permits access to internally-stored references.
+```C
+typedef struct {
+    size_t size;
+    int *buffer;
+} Array;
+
+void foreach(void *self, void (*func)(const void*))
+{
+    Array *arr = (Array*) self;
+    for(int i = 0; i < arr->size; ++i)
+        func((void*) &arr->buffer[i]);
+}
+
+Array *my_array = gc_object(Array, foreach);
+```
+
+In and out of scope values are marked as such in the rooting process, as explained [here](http://en.wikipedia.org/wiki/Tracing_garbage_collection#Reachability_of_an_object).
+```C
+int *v1 = gc_primitive(int);
+int *v2 = gc_primitive(int);
+gc_root(v1);
+gc_sweep()   // will delete v2, but not v1, since it's rooted
+```
 
 
 

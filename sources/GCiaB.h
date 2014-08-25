@@ -39,8 +39,9 @@ typedef struct {
 
 
 // main interface
+#define gc_primitive(type)        gc_object(type, NULL)
 #define gc_object(type, foreach)  gc_allocate(sizeof(type), gc_ALIGNMENT_OF(type), foreach)
-#define gc_array(type, size, foreach) gc_allocate(size * sizeof(type), gc_ALIGNMENT_OF(type), foreach)
+#define gc_buffer(type, size)     gc_allocate(size * sizeof(type), gc_ALIGNMENT_OF(type), NULL)
 void gc_sweep();  
 void gc_clear();  
 void gc_debug();

@@ -4,31 +4,31 @@
 
 
 // ensures that all allocations are freed when no roots exist
-TEST ms_rootless() 
+TEST gc_rootless() 
 {
-	int *a1 = ms_allocation(int, NULL);
-	int *a2 = ms_allocation(int, NULL);
-	int *a3 = ms_allocation(int, NULL);
-	ASSERT_EQ(ms_unfreed(), 3);
-	ms_sweep();
-	ASSERT_EQ(ms_unfreed(), 0);
+	int *a1 = gc_object(int, NULL);
+	int *a2 = gc_object(int, NULL);
+	int *a3 = gc_object(int, NULL);
+	ASSERT_EQ(gc_unfreed(), 3);
+	gc_sweep();
+	ASSERT_EQ(gc_unfreed(), 0);
 	PASS();
 }
 
 
-// TEST ms_roots()
+// TEST gc_roots()
 // {
-// 	int *a1 = ms_allocation(int, NULL);
-// 	ms_sweep();
-// 	ASSERT_EQ(ms_unfreed(), 2);
-// 	ms_root(a1);
+// 	int *a1 = gc_object(int, NULL);
+// 	gc_sweep();
+// 	ASSERT_EQ(gc_unfreed(), 2);
+// 	gc_root(a1);
 
 // 	PASS();
 // }
 
 
-GREATEST_SUITE(ms_suite) 
+GREATEST_SUITE(gc_suite) 
 {
-    RUN_TEST(ms_rootless);
-    // RUN_TEST(ms_roots);
+    RUN_TEST(gc_rootless);
+    // RUN_TEST(gc_roots);
 }
