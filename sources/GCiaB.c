@@ -91,7 +91,7 @@ static void filterUnmarked(MSCollector *self)
 }
 
 
-void ms_sweep_(MSCollector *self)
+void gc_sweep_(MSCollector *self)
 {
 	unmarkAll(self);
 	markRootsRecursive(self);
@@ -99,7 +99,7 @@ void ms_sweep_(MSCollector *self)
 }  
 
 
-void ms_debug_(MSCollector *self)
+void gc_debug_(MSCollector *self)
 {
 	printf("GC Report:\n");
 	printf(" - unfreed allocations: %u\n", (unsigned int) self->unfreedAllocations);
@@ -123,7 +123,7 @@ static MSHeader *newAllocation(size_t size
 }
 
 
-void *ms_allocate_(MSCollector *self
+void *gc_allocate_(MSCollector *self
 	             , size_t size
 	             , size_t alignment
 	             , void (*foreach)(void*, void(*)(const void*)))
@@ -144,7 +144,7 @@ void *ms_allocate_(MSCollector *self
 }
 
 
-void ms_clear_(MSCollector *self)
+void gc_clear_(MSCollector *self)
 {
 	MSHeader *header = self->firstHeader;
 	while(header){
@@ -158,14 +158,14 @@ void ms_clear_(MSCollector *self)
 }
 
 
-void ms_root(void *allocation)
+void gc_root(void *allocation)
 {
 	MSHeader *header = getDataHeader(allocation);
 	header->rooted = 1;
 }
 
 
-void ms_unroot(void *allocation)
+void gc_unroot(void *allocation)
 {
 	MSHeader *header = getDataHeader(allocation);
 	header->rooted = 0;
@@ -180,46 +180,46 @@ static void MSCollector_init(MSCollector *self)
 }
 
 
-static MSCollector *ms_g = NULL;
+static MSCollector *gc_g = NULL;
 static void prepareGC()
 {
-	if(!ms_g){
-		ms_g = malloc(sizeof(MSCollector));
-		MSCollector_init(ms_g);
+	if(!gc_g){
+		gc_g = malloc(sizeof(MSCollector));
+		MSCollector_init(gc_g);
 	}
 }
 
 
-void ms_sweep()
+void gc_sweep()
 {
 	prepareGC();
-	ms_sweep_(ms_g);
+	gc_sweep_(gc_g);
 }
 
 
-void ms_debug()
+void gc_debug()
 {
 	prepareGC();
-	ms_debug_(ms_g);
+	gc_debug_(gc_g);
 }
 
 
-void *ms_allocate(size_t size, size_t alignment, void (*foreach)(void*, void(*)(const void*)))
+void *gc_allocate(size_t size, size_t alignment, void (*foreach)(void*, void(*)(const void*)))
 {
 	prepareGC();
-	return ms_allocate_(ms_g, size, alignment, foreach);
+	return gc_allocate_(gc_g, size, alignment, foreach);
 }
 
 
-void ms_clear()
+void gc_clear()
 {
 	prepareGC();
-	ms_clear_(ms_g);
+	gc_clear_(gc_g);
 }
 
 
-size_t ms_unfreed()
+size_t gc_unfreed()
 {
 	prepareGC();
-	return ms_g->unfreedAllocations;
+	return gc_g->unfreedAllocations;
 }

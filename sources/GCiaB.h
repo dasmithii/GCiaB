@@ -5,7 +5,7 @@
 #include <limits.h>
 // This file implements mark and sweep garbage collection on top of
 // malloc and free, such that all standard libc allocation functions
-// may be used alongside ms_allocation functions without interference.
+// may be used alongside gc_object functions without interference.
 //
 // Note: at this point, functions provided here are neither reentrant 
 // nor thread safe. Do not expect otherwise.
@@ -31,7 +31,7 @@ typedef struct {
 
 
 // not sure if portable
-#define MS_ALIGNMENT_OF(type)  \
+#define gc_ALIGNMENT_OF(type)  \
 	offsetof( struct {         \
 			  	char x;        \
 			  	type member;   \
@@ -39,29 +39,29 @@ typedef struct {
 
 
 // main interface
-#define ms_allocation(type, foreach)  ms_allocate(sizeof(type), MS_ALIGNMENT_OF(type), foreach)
-#define ms_array(type, size, foreach) ms_allocate(size * sizeof(type), MS_ALIGNMENT_OF(type), foreach)
-void ms_sweep();  
-void ms_clear();  
-void ms_debug();
-size_t ms_unfreed();
-void ms_root(void*);
-void ms_unroot(void*);
+#define gc_object(type, foreach)  gc_allocate(sizeof(type), gc_ALIGNMENT_OF(type), foreach)
+#define gc_array(type, size, foreach) gc_allocate(size * sizeof(type), gc_ALIGNMENT_OF(type), foreach)
+void gc_sweep();  
+void gc_clear();  
+void gc_debug();
+size_t gc_unfreed();
+void gc_root(void*);
+void gc_unroot(void*);
 
 
 // interface for non-global allocators
-#define ms_allocation_(gc, type, foreach)  ms_allocate_(gc, sizeof(type), MS_ALIGNMENT_OF(type), foreach)
-#define ms_array_(gc, type, size, foreach) ms_allocate_(gc, size * sizeof(type), MS_ALIGNMENT_OF(type), foreach)
-void ms_sweep_(MSCollector*);  
-void ms_clear_(MSCollector*);  
-void ms_debug_(MSCollector*);
-void ms_init_(MSCollector*);
+#define gc_object_(gc, type, foreach)  gc_allocate_(gc, sizeof(type), gc_ALIGNMENT_OF(type), foreach)
+#define gc_array_(gc, type, size, foreach) gc_allocate_(gc, size * sizeof(type), gc_ALIGNMENT_OF(type), foreach)
+void gc_sweep_(MSCollector*);  
+void gc_clear_(MSCollector*);  
+void gc_debug_(MSCollector*);
+void gc_init_(MSCollector*);
 
 
 
 // allocate with given size and alignment
-void *ms_allocate(size_t, size_t, void (*)(void*, void(*)(const void*)));
-void *ms_allocate_(MSCollector*, size_t, size_t, void (*)(void*, void(*)(const void*)));
+void *gc_allocate(size_t, size_t, void (*)(void*, void(*)(const void*)));
+void *gc_allocate_(MSCollector*, size_t, size_t, void (*)(void*, void(*)(const void*)));
 
 
 
