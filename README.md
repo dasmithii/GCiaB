@@ -1,8 +1,3 @@
-# Status
-Functional, but documentation is nonexistent at this point.
-
-
-
 # Overview
 GCiaB provides a simple GC algorithm designed to make life easier during the implementation of new programming languages. It isn't highly performant, employing mark & sweep collection atop malloc calls, but the API is super simple. If you're prototyping a language, or building a toy language, where GC hangs aren't detrimental, something like this may fit your needs. 
 
