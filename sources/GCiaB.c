@@ -10,7 +10,7 @@ static void *getDataHeader(void *ptr)
 	while(*byte == 0)
 		--byte;
 	return (void*) (byte - offsetof(MSHeader, foreach) - sizeof(void (*)(void*, void(*)(void*))));
-	// TODO: fix the above line, which depends on an undefined bahavior (!)
+	// TODO
 }
 
 
