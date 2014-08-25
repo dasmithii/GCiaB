@@ -126,7 +126,7 @@ static MSHeader *newAllocation(size_t size
 void *ms_allocate_(MSCollector *self
 	             , size_t size
 	             , size_t alignment
-	             , void (*foreach)(void*, void(*)(void*)))
+	             , void (*foreach)(void*, void(*)(const void*)))
 {
 	MSHeader *header = newAllocation(size, alignment, foreach);
 
@@ -204,7 +204,7 @@ void ms_debug()
 }
 
 
-void *ms_allocate(size_t size, size_t alignment, void (*foreach)(void*, void(*)(void*)))
+void *ms_allocate(size_t size, size_t alignment, void (*foreach)(void*, void(*)(const void*)))
 {
 	prepareGC();
 	return ms_allocate_(ms_g, size, alignment, foreach);

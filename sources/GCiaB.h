@@ -14,7 +14,7 @@
 // data prepended before every allocation
 typedef struct MSHeader {
 	struct MSHeader *next;
-	void (*foreach)(void*, void(*)(void*));
+	void (*foreach)(void*, void(*)(const void*));
 	unsigned int marked : 1;
 	unsigned int rooted : 1;
 	unsigned int padding : CHAR_BIT - 3;
@@ -60,8 +60,8 @@ void ms_init_(MSCollector*);
 
 
 // allocate with given size and alignment
-void *ms_allocate(size_t, size_t, void (*)(void*, void(*)(void*)));
-void *ms_allocate_(MSCollector*, size_t, size_t, void (*)(void*, void(*)(void*)));
+void *ms_allocate(size_t, size_t, void (*)(void*, void(*)(const void*)));
+void *ms_allocate_(MSCollector*, size_t, size_t, void (*)(void*, void(*)(const void*)));
 
 
 
