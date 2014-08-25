@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "mark-and-sweep.h"
+#include "GCiaB.h"
 
 
 // backtracks to find header of assumed allocation
