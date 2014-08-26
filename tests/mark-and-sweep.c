@@ -32,5 +32,4 @@ GREATEST_SUITE(gc_suite)
 {
     RUN_TEST(gc_rootless);
     RUN_TEST(gc_roots);
-    RUN_TEST(gc_advanced);
 }

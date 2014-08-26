@@ -62,6 +62,7 @@ void *gc_allocate(size_t, size_t, void (*)(void*, void(*)(const void*)));
 void *gc_allocate_(MSCollector*, size_t, size_t, void (*)(void*, void(*)(const void*)));
 
 
+// print headers of all allocations
 void printGC_(MSCollector*);
 void printGC();
 
