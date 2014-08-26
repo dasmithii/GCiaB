@@ -1,6 +1,56 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <kit/base/bits.h>
 #include "GCiaB.h"
+
+
+// For accessing metadata in allocation header. Its format is analogous
+// to the following:
+//   struct {
+//     unsigned char marked : 1
+//  	           , rooted : 1
+//  	           , barrier : 1;
+//  	           , padding : CHAR_BIT - 3
+//   }
+#define MARKED (1 << (CHAR_BIT - 1))
+#define ROOTED (1 << (CHAR_BIT - 2))
+#define BARRICADED (1 << (CHAR_BIT - 3))
+#define PADDING_BITS (CHAR_BIT - 3)
+#define MAX_PADDING (1 << PADDING_BITS) - 1
+#define PADDING(n) ((n) & MAX_PADDING)
+
+#define MARK(h)      h->meta |= MARKED
+#define UNMARK(h)    h->meta &= ~MARKED
+#define IS_MARKED(h) ((h->meta) & MARKED)? true:false
+#define NOT_MARKED(h) !IS_MARKED(h)
+
+
+#define ROOT(h)      h->meta |= ROOTED
+#define UNROOT(h)    h->meta &= ~ROOTED
+#define IS_ROOTED(h) ((h->meta) & ROOTED)? true:false
+#define NOT_ROOTED(h) !IS_ROOTED(h)
+
+#define IS_BARRICADED(h) ((h->meta) & BARRICADED)? true:false
+#define NOT_BARRICADED(h) !IS_BARRICADED(h)
+
+#define SET_PADDING(h, v)        \
+	h->meta &= ~MAX_PADDING;     \
+	h->meta |= PADDING(v)
+
+#define GET_PADDING(h) ((h->meta) & MAX_PADDING)
+
+
+static void printHeader(MSHeader *self)
+{
+	printf("Header @%p\n", self);
+	printf("- meta: %d\n", self->meta);
+	printf("- marked: %d\n", IS_MARKED(self));
+	printf("- rooted: %d\n", IS_ROOTED(self));
+	// printf("- padding: %d\n", GET_PADDING(self));
+	// printf("- barricade: %d\n", IS_BARRICADED(self));
+	// printf("- next: %p\n", self->next);
+	// printf("- foreach: %p\n", self->foreach);
+}
 
 
 // backtracks to find header of assumed allocation
@@ -9,8 +59,7 @@ static void *getDataHeader(const void *ptr)
 	char *byte = ((char*) ptr) - 1;
 	while(*byte == 0)
 		--byte;
-	return (void*) (byte - offsetof(MSHeader, foreach) - sizeof(void (*)(void*, void(*)(void*))));
-	// TODO
+	return (void*) (byte - offsetof(MSHeader, meta));
 }
 
 
@@ -18,9 +67,7 @@ static void *getDataHeader(const void *ptr)
 static void *getHeaderData(MSHeader *self)
 {
 	char *ptr = (char*) self;
-	ptr += sizeof(MSHeader);
-	ptr += self->padding;
-	return (void*) ptr;
+	return ptr + sizeof(MSHeader) + GET_PADDING(self);
 }
 
 
@@ -28,7 +75,7 @@ static void unmarkAll(MSCollector *self)
 {
 	MSHeader *i = self->firstHeader;
 	while(i){
-		i->marked = 0;
+		UNMARK(i);
 		i = i->next;
 	}
 }
@@ -37,9 +84,10 @@ static void unmarkAll(MSCollector *self)
 static void markDataRecursive(const void *data);
 static void markRecursive(MSHeader *root)
 {
-	if(root->marked == 0){
-		root->marked = 1;
-		root->foreach(getHeaderData(root), markDataRecursive);
+	if(NOT_MARKED(root)){
+		MARK(root);
+		if(root->foreach)
+			root->foreach(getHeaderData(root), markDataRecursive);
 	}
 }
 
@@ -54,7 +102,7 @@ static void markRootsRecursive(MSCollector *self)
 {
 	MSHeader *i = self->firstHeader;
 	while(i){
-		if(i->rooted)
+		if(IS_ROOTED(i))
 			markRecursive(i);
 		i = i->next;
 	}
@@ -65,7 +113,7 @@ static void filterUnmarked(MSCollector *self)
 {
 	MSHeader *i = self->firstHeader;
 	while(i && i->next){
-		if(i->next->marked == 0){
+		if(NOT_MARKED(i->next)){
 			MSHeader *temp = i->next->next;
 			free(i->next);
 			i->next = temp;
@@ -77,7 +125,7 @@ static void filterUnmarked(MSCollector *self)
 
 
 	// check first
-	if(self->firstHeader && self->firstHeader->marked == 0){
+	if(self->firstHeader && NOT_MARKED(self->firstHeader)){
 		i = self->firstHeader->next;
 		free(self->firstHeader);
 		self->firstHeader = i;
@@ -110,15 +158,16 @@ static MSHeader *newAllocation(size_t size
 	                         , size_t alignment
 	                         , void (*foreach)(void*, void(*)(const void*)))
 {
-	size_t prefixedBytes = sizeof(MSHeader) > alignment? sizeof(MSHeader):alignment;
-	size_t required = prefixedBytes + size;
+	size_t bloat;
+	if(alignment >= sizeof(MSHeader))
+		bloat = alignment - sizeof(MSHeader);
+	else
+		bloat = (1 + sizeof(MSHeader) / alignment) * alignment;
+	size_t required = sizeof(MSHeader) + bloat + size;
 	MSHeader *ret = calloc(1, required);
 	ret->next = NULL;
-	ret->marked = 0;
-	ret->rooted = 0;
-	ret->padding = prefixedBytes - sizeof(MSHeader);
 	ret->foreach = foreach;
-	ret->barrier = 1;
+	ret->meta = BARRICADED | PADDING(bloat);
 	return ret;
 }
 
@@ -161,14 +210,14 @@ void gc_clear_(MSCollector *self)
 void gc_root(void *allocation)
 {
 	MSHeader *header = getDataHeader(allocation);
-	header->rooted = 1;
+	ROOT(header);
 }
 
 
 void gc_unroot(void *allocation)
 {
 	MSHeader *header = getDataHeader(allocation);
-	header->rooted = 0;
+	UNROOT(header);
 }
 
 
@@ -187,6 +236,23 @@ static void prepareGC()
 		gc_g = malloc(sizeof(MSCollector));
 		MSCollector_init(gc_g);
 	}
+}
+
+
+void printGC_(MSCollector *self)
+{
+	printf("GC ALLOCATION LIST\n");
+	MSHeader *header = self->firstHeader;
+	while(header){
+		printHeader(header);
+		header = header->next;
+	}
+}
+
+void printGC()
+{
+	prepareGC();
+	printGC_(gc_g);
 }
 
 

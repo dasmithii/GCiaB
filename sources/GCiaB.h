@@ -15,10 +15,7 @@
 typedef struct MSHeader {
 	struct MSHeader *next;
 	void (*foreach)(void*, void(*)(const void*));
-	unsigned int marked : 1;
-	unsigned int rooted : 1;
-	unsigned int padding : CHAR_BIT - 3;
-	unsigned int barrier : 1;
+	unsigned char meta;
 } MSHeader;
 
 
@@ -64,6 +61,9 @@ void gc_init_(MSCollector*);
 void *gc_allocate(size_t, size_t, void (*)(void*, void(*)(const void*)));
 void *gc_allocate_(MSCollector*, size_t, size_t, void (*)(void*, void(*)(const void*)));
 
+
+void printGC_(MSCollector*);
+void printGC();
 
 
 #endif
