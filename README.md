@@ -37,7 +37,7 @@ int *v2 = gc_primitive(int);
 gc_root(v1);
 gc_sweep()   // will delete v2, but not v1, since it's rooted
 ```
-
+`gc_sweep()` collects all allocations unreachable through root values and their reference networks (as defined by foreach functions).
 
 
 # Installation
