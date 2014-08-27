@@ -45,6 +45,7 @@ void gc_debug();
 size_t gc_unfreed();
 void gc_root(void*);
 void gc_unroot(void*);
+void gc_include(MSCollector*);
 
 
 // interface for non-global allocators
@@ -54,6 +55,7 @@ void gc_sweep_(MSCollector*);
 void gc_clear_(MSCollector*);  
 void gc_debug_(MSCollector*);
 void gc_init_(MSCollector*);
+void gc_include_(MSCollector*, MSCollector*);
 
 
 
@@ -65,6 +67,7 @@ void *gc_allocate_(MSCollector*, size_t, size_t, void (*)(void*, void(*)(const v
 // print headers of all allocations
 void printGC_(MSCollector*);
 void printGC();
+
 
 
 #endif

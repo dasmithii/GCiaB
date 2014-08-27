@@ -291,3 +291,24 @@ size_t gc_unfreed()
 	prepareGC();
 	return gc_g->unfreedAllocations;
 }
+
+
+void gc_include_(MSCollector *self, MSCollector *other)
+{
+	if(self->unfreedAllocations == 0){
+		self->firstHeader = other->firstHeader;
+		self->lastHeader = other->lastHeader;
+	} else {
+		self->lastHeader->next = other->firstHeader;
+		self->lastHeader = other->lastHeader;
+	}
+	self->unfreedAllocations += other->unfreedAllocations;
+}
+
+
+void gc_include(MSCollector *other)
+{
+	gc_include_(gc_g, other);
+}
+
+
