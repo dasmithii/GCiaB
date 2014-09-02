@@ -312,3 +312,8 @@ void gc_include(MSCollector *other)
 }
 
 
+void gc_init_(MSCollector *self)
+{
+	MSCollector_init(self);
+}
+
