@@ -4,6 +4,14 @@
 #include "GCiaB.h"
 
 
+// // data prepended before every allocation
+// typedef struct MSHeader {
+// 	struct MSHeader *next;
+// 	void (*foreach)(void*, void(*)(const void*));
+// 	unsigned char meta;
+// } MSHeader;
+
+
 // For accessing metadata in allocation header. Its format is analogous
 // to the following:
 //   struct {
@@ -73,7 +81,7 @@ static void *getHeaderData(MSHeader *self)
 }
 
 
-static void unmarkAll(MSCollector *self)
+static void unmarkAll(GCiaB *self)
 {
 	MSHeader *i = self->firstHeader;
 	while(i){
@@ -100,7 +108,7 @@ static void markDataRecursive(const void *data)
 }
 
 
-static void markRootsRecursive(MSCollector *self)
+static void markRootsRecursive(GCiaB *self)
 {
 	MSHeader *i = self->firstHeader;
 	while(i){
@@ -111,7 +119,7 @@ static void markRootsRecursive(MSCollector *self)
 }
 
 
-static void filterUnmarked(MSCollector *self)
+static void filterUnmarked(GCiaB *self)
 {
 	MSHeader *i = self->firstHeader;
 	while(i && i->next){
@@ -141,7 +149,13 @@ static void filterUnmarked(MSCollector *self)
 }
 
 
-void gc_sweep_(MSCollector *self)
+size_t GCiaB_unfreed(GCiaB *self)
+{
+	return self->unfreedAllocations;
+}
+
+
+void GCiaB_sweep(GCiaB *self)
 {
 	unmarkAll(self);
 	markRootsRecursive(self);
@@ -149,7 +163,7 @@ void gc_sweep_(MSCollector *self)
 }  
 
 
-void gc_debug_(MSCollector *self)
+void GCiaB_debug(GCiaB *self)
 {
 	printf("GC Report:\n");
 	printf(" - unfreed allocations: %u\n", (unsigned int) self->unfreedAllocations);
@@ -174,10 +188,10 @@ static MSHeader *newAllocation(size_t size
 }
 
 
-void *gc_allocate_(MSCollector *self
-	             , size_t size
-	             , size_t alignment
-	             , void (*foreach)(void*, void(*)(const void*)))
+void *GCiaB_allocation(GCiaB *self
+	                 , size_t size
+	                 , size_t alignment
+	                 , void (*foreach)(void*, void(*)(const void*)))
 {
 	MSHeader *header = newAllocation(size, alignment, foreach);
 
@@ -185,7 +199,7 @@ void *gc_allocate_(MSCollector *self
 		self->firstHeader = header;
 		self->lastHeader = header;
 	} else {
-		self->lastHeader->next = header;
+		((MSHeader*) self->lastHeader)->next = header;
 		self->lastHeader = header;
 	}
 
@@ -195,7 +209,7 @@ void *gc_allocate_(MSCollector *self
 }
 
 
-void gc_clear_(MSCollector *self)
+void GCiaB_clean(GCiaB *self)
 {
 	MSHeader *header = self->firstHeader;
 	while(header){
@@ -209,21 +223,21 @@ void gc_clear_(MSCollector *self)
 }
 
 
-void gc_root(void *allocation)
+void GCiaB_root(GCiaB *self, void *allocation)
 {
 	MSHeader *header = getDataHeader(allocation);
 	ROOT(header);
 }
 
 
-void gc_unroot(void *allocation)
+void GCiaB_unroot(GCiaB *self, void *allocation)
 {
 	MSHeader *header = getDataHeader(allocation);
 	UNROOT(header);
 }
 
 
-static void MSCollector_init(MSCollector *self)
+void GCiaB_init(GCiaB *self)
 {
 	self->firstHeader = NULL;
 	self->lastHeader  = NULL;
@@ -231,17 +245,7 @@ static void MSCollector_init(MSCollector *self)
 }
 
 
-static MSCollector *gc_g = NULL;
-static void prepareGC()
-{
-	if(!gc_g){
-		gc_g = malloc(sizeof(MSCollector));
-		MSCollector_init(gc_g);
-	}
-}
-
-
-void printGC_(MSCollector *self)
+void GCiaB_print(GCiaB *self)
 {
 	printf("GC ALLOCATION LIST\n");
 	MSHeader *header = self->firstHeader;
@@ -251,49 +255,8 @@ void printGC_(MSCollector *self)
 	}
 }
 
-void printGC()
-{
-	prepareGC();
-	printGC_(gc_g);
-}
 
-
-void gc_sweep()
-{
-	prepareGC();
-	gc_sweep_(gc_g);
-}
-
-
-void gc_debug()
-{
-	prepareGC();
-	gc_debug_(gc_g);
-}
-
-
-void *gc_allocate(size_t size, size_t alignment, void (*foreach)(void*, void(*)(const void*)))
-{
-	prepareGC();
-	return gc_allocate_(gc_g, size, alignment, foreach);
-}
-
-
-void gc_clear()
-{
-	prepareGC();
-	gc_clear_(gc_g);
-}
-
-
-size_t gc_unfreed()
-{
-	prepareGC();
-	return gc_g->unfreedAllocations;
-}
-
-
-void gc_include_(MSCollector *self, MSCollector *other)
+void GCiaB_include(GCiaB *self, GCiaB *other)
 {
 	if(self->unfreedAllocations == 0){
 		self->firstHeader = other->firstHeader;
@@ -304,16 +267,3 @@ void gc_include_(MSCollector *self, MSCollector *other)
 	}
 	self->unfreedAllocations += other->unfreedAllocations;
 }
-
-
-void gc_include(MSCollector *other)
-{
-	gc_include_(gc_g, other);
-}
-
-
-void gc_init_(MSCollector *self)
-{
-	MSCollector_init(self);
-}
-

@@ -1,32 +1,32 @@
 #include <kit/greatest.h>
-#include "../sources/GCiaB.h"
+#include "../sources/Global.h"
 
 
 
 // ensures that all allocations are freed when no roots exist
-TEST gc_rootless() 
+TEST GCiaB_rootless() 
 {
-	int *a1 = gc_primitive(int);
-	int *a2 = gc_primitive(int);
-	int *a3 = gc_primitive(int);
-	ASSERT_EQ(gc_unfreed(), 3);
-	gc_sweep();
-	ASSERT_EQ(gc_unfreed(), 0);
+	int *a1 = GCiaB_primitive_g(int);
+	int *a2 = GCiaB_primitive_g(int);
+	int *a3 = GCiaB_primitive_g(int);
+	ASSERT_EQ(GCiaB_unfreed_g(), 3);
+	GCiaB_sweep_g();
+	ASSERT_EQ(GCiaB_unfreed_g(), 0);
 	PASS();
 }
 
 
-TEST gc_roots()
+TEST GCiaB_roots()
 {
-	int *a1 = gc_primitive(int);
-	int *a2 = gc_primitive(int);
-	ASSERT_EQ(gc_unfreed(), 2);
-	gc_root(a1);
-	gc_sweep();
-	ASSERT_EQ(gc_unfreed(), 1);
-	gc_unroot(a1);
-	gc_sweep();
-	ASSERT_EQ(gc_unfreed(), 0);
+	int *a1 = GCiaB_primitive_g(int);
+	int *a2 = GCiaB_primitive_g(int);
+	ASSERT_EQ(GCiaB_unfreed_g(), 2);
+	GCiaB_root_g(a1);
+	GCiaB_sweep_g();
+	ASSERT_EQ(GCiaB_unfreed_g(), 1);
+	GCiaB_unroot_g(a1);
+	GCiaB_sweep_g();
+	ASSERT_EQ(GCiaB_unfreed_g(), 0);
 	PASS();
 }
 
@@ -51,15 +51,15 @@ static void PointerContainer_eachReference(void *addr, void (*func)(const void*)
 
 
 
-TEST gc_multi()
+TEST GCiaB_multi()
 {
 
-	int *i1 = gc_primitive(int);
-	int *i2 = gc_primitive(int);
-	int *i3 = gc_primitive(int);
-	PointerContainer *cont = gc_object(PointerContainer, PointerContainer_eachReference);
-	PointerContainer *root = gc_object(PointerContainer, PointerContainer_eachReference);
-	gc_root(root);
+	int *i1 = GCiaB_primitive_g(int);
+	int *i2 = GCiaB_primitive_g(int);
+	int *i3 = GCiaB_primitive_g(int);
+	PointerContainer *cont = GCiaB_object_g(PointerContainer, PointerContainer_eachReference);
+	PointerContainer *root = GCiaB_object_g(PointerContainer, PointerContainer_eachReference);
+	GCiaB_root_g(root);
 	root->p1 = cont;
 	root->p2 = i1;
 	cont->p1 = i2;
@@ -70,15 +70,15 @@ TEST gc_multi()
 //  |      cont-----
 //  |        |      
 // i1   i2  i3
-	ASSERT_EQ(gc_unfreed(), 5);
-	gc_sweep();
+	ASSERT_EQ(GCiaB_unfreed_g(), 5);
+	GCiaB_sweep_g();
 //  |
 // root-------  ----
 //  |        | |   |
 //  |      cont-----
 //  |        |      
 // i1       i3
-	ASSERT_EQ(gc_unfreed(), 4);
+	ASSERT_EQ(GCiaB_unfreed_g(), 4);
 	root->p1 = NULL;
 //  |
 // root      -  ----
@@ -86,24 +86,24 @@ TEST gc_multi()
 //  |      cont-----
 //  |        |      
 // i1       i3
-	gc_sweep();
-	ASSERT_EQ(gc_unfreed(), 2);
+	GCiaB_sweep_g();
+	ASSERT_EQ(GCiaB_unfreed_g(), 2);
 //  |
 // root    
 //  |      
 //  |
 //  |
 // i1
-	gc_unroot(root);
-	gc_sweep();
-	ASSERT_EQ(gc_unfreed(), 0);
+	GCiaB_unroot_g(root);
+	GCiaB_sweep_g();
+	ASSERT_EQ(GCiaB_unfreed_g(), 0);
 	PASS();
 }
 
 
-GREATEST_SUITE(gc_suite) 
+GREATEST_SUITE(GCiaB_suite) 
 {
-    RUN_TEST(gc_rootless);
-    RUN_TEST(gc_roots);
-    RUN_TEST(gc_multi);
+    RUN_TEST(GCiaB_rootless);
+    RUN_TEST(GCiaB_roots);
+    RUN_TEST(GCiaB_multi);
 }
