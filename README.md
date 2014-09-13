@@ -40,6 +40,21 @@ GCiaB_sweep_g()   // will delete v2, but not v1, since it's rooted
 `GCiaB_sweep_g()` collects all allocations unreachable through root values and their reference networks (as defined by foreach functions).
 
 
+
+# Non-global GC
+Note that each function postfixed with a `_g` is applied to the global garbage collector. For a self-contained, non-global GC, declare `GCiaB gc;`, initialize it, and apply the same functions with a GCiaB pointer prepended to the argument list. In example:
+```
+int *i = GCiaB_primitive_g(int);
+```
+could be performed like this:
+```
+GCiaB gc;
+GCiaB_init(&gc);
+int *i = GCiaB_primitive(&gc, int);
+```
+
+
+
 # Installation
 This project is managed by [Kit](https://github.com/dasmithii/Kit). If you haven't already, install kit via [this link](https://github.com/dasmithii/Kit#installation), then execute the following:
 ```
