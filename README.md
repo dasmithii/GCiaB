@@ -8,12 +8,12 @@ However, if X-language has high ambitions, this library should be replaced later
 # Tutorial
 The GCiaB interface consists of three primary functions: allocation, root specification, and sweeping. 
 
-Basic datatypes are allocated using `gc_primitive(<type>)`:
+Basic datatypes are allocated using `GCiaB_primitive_g(<type>)`:
 ```C
-int *my_integer = gc_primitive(int);
+int *my_integer = GCiaB_primitive_g(int);
 ```
 
-Compound objects are created via `gc_object(<type>, <foreach>)`. Argument two permits access to internally-stored references.
+Compound objects are created via `GCiaB_object_g(<type>, <foreach>)`. Argument two permits access to internally-stored references.
 ```C
 typedef struct {
     size_t size;
@@ -27,17 +27,17 @@ void foreach(void *self, void (*func)(const void*))
         func((void*) &arr->buffer[i]);
 }
 
-Array *my_array = gc_object(Array, foreach);
+Array *my_array = GCiaB_object_g(Array, foreach);
 ```
 
 In and out of scope values are marked as such in the rooting process, as explained [here](http://en.wikipedia.org/wiki/Tracing_garbage_collection#Reachability_of_an_object).
 ```C
-int *v1 = gc_primitive(int);
-int *v2 = gc_primitive(int);
-gc_root(v1);
-gc_sweep()   // will delete v2, but not v1, since it's rooted
+int *v1 = GCiaB_primitive_g(int);
+int *v2 = GCiaB_primitive_g(int);
+GCiaB_root_g(v1);
+GCiaB_sweep_g()   // will delete v2, but not v1, since it's rooted
 ```
-`gc_sweep()` collects all allocations unreachable through root values and their reference networks (as defined by foreach functions).
+`GCiaB_sweep_g()` collects all allocations unreachable through root values and their reference networks (as defined by foreach functions).
 
 
 # Installation
