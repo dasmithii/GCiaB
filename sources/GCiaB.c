@@ -4,14 +4,6 @@
 #include "GCiaB.h"
 
 
-// // data prepended before every allocation
-// typedef struct MSHeader {
-// 	struct MSHeader *next;
-// 	void (*foreach)(void*, void(*)(const void*));
-// 	unsigned char meta;
-// } MSHeader;
-
-
 // For accessing metadata in allocation header. Its format is analogous
 // to the following:
 //   struct {
@@ -48,18 +40,12 @@
 #define GET_PADDING(h) ((h->meta) & MAX_PADDING)
 
 
-
-
 static void printHeader(MSHeader *self)
 {
 	printf("Header @%p\n", self);
 	printf("- meta: %d\n", self->meta);
 	printf("- marked: %d\n", IS_MARKED(self));
 	printf("- rooted: %d\n", IS_ROOTED(self));
-	// printf("- padding: %d\n", GET_PADDING(self));
-	// printf("- barricade: %d\n", IS_BARRICADED(self));
-	// printf("- next: %p\n", self->next);
-	// printf("- foreach: %p\n", self->foreach);
 }
 
 
@@ -119,15 +105,23 @@ static void markRootsRecursive(GCiaB *self)
 }
 
 
+static void GCiaB_freeAllocation(GCiaB *self, MSHeader *h)
+{
+	if(self->onFree)
+		self->onFree(getHeaderData(h));
+	free(h);
+	self->unfreedAllocations -= 1;
+}
+
+
 static void filterUnmarked(GCiaB *self)
 {
 	MSHeader *i = self->firstHeader;
 	while(i && i->next){
 		if(NOT_MARKED(i->next)){
 			MSHeader *temp = i->next->next;
-			free(i->next);
+			GCiaB_freeAllocation(self, i->next);
 			i->next = temp;
-			self->unfreedAllocations -= 1;
 		} else {
 			i = i->next;
 		}
@@ -242,6 +236,7 @@ void GCiaB_init(GCiaB *self)
 	self->firstHeader = NULL;
 	self->lastHeader  = NULL;
 	self->unfreedAllocations = 0;
+	self->onFree = NULL;
 }
 
 
@@ -266,4 +261,10 @@ void GCiaB_include(GCiaB *self, GCiaB *other)
 		self->lastHeader = other->lastHeader;
 	}
 	self->unfreedAllocations += other->unfreedAllocations;
+}
+
+
+void GCiaB_onFree(GCiaB *self, void(*function)(void*))
+{
+	self->onFree = function;
 }

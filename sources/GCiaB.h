@@ -24,6 +24,7 @@ typedef struct {
 	MSHeader *firstHeader;
 	MSHeader *lastHeader;
 	size_t unfreedAllocations;
+	void (*onFree)(void*);
 } GCiaB;
 
 
@@ -42,6 +43,7 @@ typedef struct {
 
 
 void GCiaB_init(GCiaB *self);
+void GCiaB_onFree(GCiaB*, void(*)(void*));
 void GCiaB_sweep(GCiaB *self);  
 void GCiaB_clean(GCiaB *self);  
 void GCiaB_debug(GCiaB *self);
